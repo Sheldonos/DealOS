@@ -20,7 +20,7 @@ app=FastAPI(title='DealOS Core',version='1.0.0')
 Base.metadata.create_all(bind=engine)
 
 def auth(x_dealos_key:str|None=Header(None)):
-    if x_dealos_key != settings.dealos_api_key:
+    if settings.dealos_api_key in {None,'','dev-only-change-me'} or settings.dealos_api_key.startswith('REQUIRED') or x_dealos_key != settings.dealos_api_key:
         raise HTTPException(401,'Invalid DealOS key')
     return True
 

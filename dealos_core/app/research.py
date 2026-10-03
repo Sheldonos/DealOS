@@ -27,14 +27,14 @@ SCAN_SCHEMA={
 
 def run_research(prompt:str):
     assert_openai_budget(0.10)
-    r=_client().chat.completions.create(
+    r=_client().responses.create(
       model=settings.openai_standard_model,
       tools=[{'type':'web_search'}],
-      messages=[{'role':'system','content':'Research a business opportunity using current public web evidence. Return only evidence-backed facts. Do not invent names, emails, relationships, budgets, certifications or contract details. Prefer official/primary sources.'},{'role':'user','content':prompt}],
-      response_format={'type':'json_schema','json_schema':{'name':'deal_research','schema':RESEARCH_SCHEMA,'strict':True}}
+      input=[{'role':'system','content':'Research a business opportunity using current public web evidence. Return only evidence-backed facts. Do not invent names, emails, relationships, budgets, certifications or contract details. Prefer official/primary sources.'},{'role':'user','content':prompt}],
+      text={'format':{'type':'json_schema','name':'deal_research','schema':RESEARCH_SCHEMA,'strict':True}}
     )
     record_openai_usage(settings.openai_standard_model,'qualified_research',r,web_search_calls=1)
-    return json.loads(r.choices[0].message.content)
+    return json.loads(r.output_text)
 
 def scan_lane(lane:str):
     cfg=lanes().get('private_market',{}).get(lane)
@@ -42,10 +42,10 @@ def scan_lane(lane:str):
     if not lane_enabled(lane): raise ValueError('Lane disabled or business profile unconfigured')
     prompt=cfg.get('scan_prompt')+'\nReturn at most '+str(cfg.get('max_results_per_scan',10))+' opportunities. Use a stable public URL-derived external_id or deterministic organization+signal identifier.'
     assert_openai_budget(0.10)
-    r=_client().chat.completions.create(
+    r=_client().responses.create(
       model=settings.openai_standard_model, tools=[{'type':'web_search'}],
-      messages=[{'role':'system','content':'Find recent, public, verifiable B2B buying or need signals. Do not invent opportunities. Primary sources preferred. Exclude vague listicles and generic market commentary.'},{'role':'user','content':prompt}],
-      response_format={'type':'json_schema','json_schema':{'name':'market_scan','schema':SCAN_SCHEMA,'strict':True}}
+      input=[{'role':'system','content':'Find recent, public, verifiable B2B buying or need signals. Do not invent opportunities. Primary sources preferred. Exclude vague listicles and generic market commentary.'},{'role':'user','content':prompt}],
+      text={'format':{'type':'json_schema','name':'market_scan','schema':SCAN_SCHEMA,'strict':True}}
     )
     record_openai_usage(settings.openai_standard_model,'private_market_scan',r,web_search_calls=1)
-    return json.loads(r.choices[0].message.content)
+    return json.loads(r.output_text)
